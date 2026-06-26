@@ -73,3 +73,38 @@ Otros casos para probar:
 
 
 # Desarrolle su solución a partir de esta línea.
+Capacidad_Maxima = 700
+ocupacion_actual = 0
+grupos_aceptados = []
+grupos_rechazados = []
+
+entrada = ""
+
+while entrada != "fin":
+  entrada = input("Ingrese el tamaño del grupo (o escriba 'fin'): ").strip().lower()
+  if entrada != "fin":
+    try:
+      grupo = int(entrada)
+      if grupo <= 0:
+        print("Entrada inválida. Se rechazan ceros y números negatuvos.")
+      else:
+        if ocupacion_actual + grupo <= Capacidad_Maxima:
+          ocupacion_actual += grupo
+          grupos_aceptados.append(grupo)
+          espacios = Capacidad_Maxima - ocupacion_actual
+          print(f"Grupo aceptado. Ocupacion: {ocupacion_actual}, Espacios disponibles: {espacios}")
+        else:
+          grupos_rechazados.append(grupo)
+          espacios = Capacidad_Maxima - ocupacion_actual
+          print(f"Grupo Rechazado. Ocupacion: {ocupacion_actual}. Espacios disponbibles: {espacios}")
+    except ValueError:
+      print(f"Entrada inválida. Ingrese un número entero o 'fin'.")
+
+#REPORTE FINAL
+print(f"Capacidad máxima: {Capacidad_Maxima}")
+print(f"Personas admitidas: {ocupacion_actual}")
+print(f"Espacios disponibles: {Capacidad_Maxima - ocupacion_actual}")
+
+#Calculo del procentajes
+procentaje = (ocupacion_actual/ Capacidad_Maxima)
+print(f"Porcentaje de ocupación: {porcentaje:.2f}%")
