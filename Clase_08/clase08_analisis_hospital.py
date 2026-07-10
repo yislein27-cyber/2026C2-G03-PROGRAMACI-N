@@ -1,13 +1,6 @@
-"""Semana 08: analisis basico de pacientes desde JSON.
-
-Complete los requerimientos indicados. El objetivo principal es practicar
-ciclos: recorrer una lista de pacientes leida desde JSON y acumular indicadores
-simples.
-"""
-
 import json
 
-ARCHIVO_DATOS = "datos_clinica.json"
+ARCHIVO_DATOS = "Clase_08/datos_clinica.json"
 
 
 def calcular_promedio(suma, cantidad):
@@ -23,7 +16,10 @@ def es_adulto_mayor(edad):
 # REQUERIMIENTO 1:
 # Construya aqui la lectura del JSON con el docente.
 # Al terminar, la variable pacientes debe tener 15 registros.
-pacientes = []
+with open(ARCHIVO_DATOS, 'r', encoding='utf-8') as archivo:
+    pacientes = json.load(archivo)
+
+print(pacientes)
 
 
 # 2. Exploracion inicial
@@ -38,7 +34,6 @@ else:
 
     # Variables acumuladoras del analisis.  suma_edades, conteo_san_jose, 
     # conteo_mujeres, conteo_hombres y adultos_mayores.
- 
 
     # 4. Ciclo principal
     # Cada vuelta del ciclo representa un paciente del JSON.
