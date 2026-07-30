@@ -1,0 +1,175 @@
+# ==========================================================
+# Proyecto Final - Análisis de Ventas de Superstore
+# Metodología IteraFlex - Fundamentos de Python
+# Autor: Yislein Madrigal R
+# ==========================================================
+
+import pandas as pd
+
+# ---------------- VARIABLES GLOBALES ----------------
+ARCHIVO_CSV = "Muestra_Superstore.csv"
+datos_ventas = []
+resumen_categorias = {}
+programa_activo = True
+
+# ---------------- FASE 1: Extracción de datos ----------------
+def cargar_datos(ruta_archivo):
+    print("\n--- Cargando datos del archivo ---")
+    try:
+        df = pd.read_csv(ruta_archivo, encoding="latin1")
+        print("Archivo cargado correctamente")
+        print("Dimensiones:", df.shape)
+        return df
+    except FileNotFoundError:
+        print(f"ERROR: no se encontró el archivo '{ruta_archivo}'")
+        return None
+    except Exception as e:
+        print(f"ERROR inesperado al cargar el archivo: {e}")
+        return None
+
+# ---------------- FASE 2: Limpieza y Transformación ----------------
+def limpiar_datos(df):
+    print("\n--- Limpieza y Transformación ---")
+    filas_antes = df.shape[0]
+
+    df.dropna(inplace=True)
+    df.drop_duplicates(inplace=True)
+
+    columnas_numericas = ["Sales", "Profit", "Discount", "Quantity"]
+    df[columnas_numericas] = df[columnas_numericas].apply(pd.to_numeric, errors="coerce")
+    df["Order Date"] = pd.to_datetime(df["Order Date"], errors="coerce")
+
+    df.dropna(subset=columnas_numericas + ["Order Date"], inplace=True)
+
+    filas_despues = df.shape[0]
+    print(f"Filas antes de limpiar: {filas_antes}")
+    print(f"Filas después de limpiar: {filas_despues}")
+    return df
+
+# ---------------- FASE 3: Convertir a listas y diccionarios ----------------
+def convertir_a_lista_diccionarios(df):
+    print("\n--- Convirtiendo datos a lista de diccionarios ---")
+    lista_datos = df.to_dict("records")
+    print(f"Se generaron {len(lista_datos)} registros de venta")
+    return lista_datos
+
+def calcular_metricas_por_categoria(lista_datos):
+    print("\n--- Calculando métricas por categoría ---")
+    resumen = {}
+
+    for registro in lista_datos:
+        categoria = registro["Category"]
+        venta = registro["Sales"]
+
+        if categoria not in resumen:
+            resumen[categoria] = {"total_ventas": 0, "cantidad": 0}
+
+        resumen[categoria]["total_ventas"] += venta
+        resumen[categoria]["cantidad"] += 1
+
+    for categoria, valores in resumen.items():
+        promedio = valores["total_ventas"] / valores["cantidad"]
+        valores["promedio"] = round(promedio, 2)
+
+    return resumen
+
+def calcular_metricas_por_region(lista_datos):
+    resumen_region = {}
+    for registro in lista_datos:
+        region = registro["Region"]
+        venta = registro["Sales"]
+        if region in resumen_region:
+            resumen_region[region] += venta
+        else:
+            resumen_region[region] = venta
+    return resumen_region
+
+def ventas_por_mes(lista_datos):
+    resumen_mes = {}
+    for registro in lista_datos:
+        mes = registro["Order Date"].strftime("%Y-%m")
+        venta = registro["Sales"]
+        if mes in resumen_mes:
+            resumen_mes[mes] += venta
+        else:
+            resumen_mes[mes] = venta
+    return resumen_mes
+
+# ---------------- FASE 4: Filtrado interactivo ----------------
+def filtrar_por_categoria(lista_datos, categoria_buscada):
+    resultados = []
+    for registro in lista_datos:
+        if registro["Category"].lower() == categoria_buscada.lower():
+            resultados.append(registro)
+    return resultados
+
+def filtrar_por_umbral_ventas(lista_datos, umbral):
+    resultados = []
+    for registro in lista_datos:
+        if registro["Sales"] >= umbral:
+            resultados.append(registro)
+    return resultados
+
+# ---------------- FASE 5: Menú interactivo ----------------
+def mostrar_menu():
+    print("\n===== MENÚ DE ANÁLISIS - SUPERSTORE =====")
+    print("1. Ver ventas totales y promedio por categoría")
+    print("2. Ver ventas totales por región")
+    print("3. Ver tendencia de ventas por mes")
+    print("4. Filtrar ventas por categoría")
+    print("5. Filtrar ventas por encima de un monto")
+    print("6. Salir")
+
+def ejecutar_programa():
+    global programa_activo
+
+    df = cargar_datos(ARCHIVO_CSV)
+    if df is None:
+        return
+
+    df = limpiar_datos(df)
+    lista_datos = convertir_a_lista_diccionarios(df)
+
+    while programa_activo:
+        mostrar_menu()
+        opcion = input("Elige una opción (1-6): ")
+
+        if opcion == "1":
+            resumen = calcular_metricas_por_categoria(lista_datos)
+            for categoria, valores in resumen.items():
+                print(f"{categoria}: total=${valores['total_ventas']:.2f}  promedio=${valores['promedio']}")
+
+        elif opcion == "2":
+            resumen_region = calcular_metricas_por_region(lista_datos)
+            for region, total in resumen_region.items():
+                print(f"{region}: ${total:.2f}")
+
+        elif opcion == "3":
+            resumen_mes = ventas_por_mes(lista_datos)
+            for mes in sorted(resumen_mes):
+                print(f"{mes}: ${resumen_mes[mes]:.2f}")
+
+        elif opcion == "4":
+            categoria_usuario = input("¿Qué categoría quieres consultar? (Furniture / Office Supplies / Technology): ")
+            filtrados = filtrar_por_categoria(lista_datos, categoria_usuario)
+            print(f"Se encontraron {len(filtrados)} ventas en la categoría '{categoria_usuario}'")
+
+        elif opcion == "5":
+            monto_texto = input("Ingresa el monto mínimo de venta a filtrar: ")
+            try:
+                monto = float(monto_texto)
+                filtrados = filtrar_por_umbral_ventas(lista_datos, monto)
+                print(f"Se encontraron {len(filtrados)} ventas iguales o mayores a ${monto}")
+            except ValueError:
+                print("Ese no es un número válido")
+
+        elif opcion == "6":
+            programa_activo = False
+            print("Saliendo del programa. ¡Gracias!")
+
+        else:
+            print("Opción no válida, intenta de nuevo")
+
+# ---------------- Ejecución principal ----------------
+if __name__ == "__main__":
+    ejecutar_programa()
