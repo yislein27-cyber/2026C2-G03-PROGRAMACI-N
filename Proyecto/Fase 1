@@ -7,7 +7,8 @@
 import pandas as pd
 
 # ---------------- VARIABLES GLOBALES ----------------
-ARCHIVO_CSV = "Muestra_Superstore.csv"
+ARCHIVO_CSV = "/Users/yisleinmadrigalramirez/Documents/GitHub/2026C2-G03-PROGRAMACIÓN/Proyecto/Muestra_Superstore.csv"
+#ARCHIVO_CSV = "/Users/yisleinmadridramirez/Documents/GitHub/2026C2-G03-PROGRAMACION/Proyecto/Fase 1/Muestra_Superstore.csv"
 datos_ventas = []
 resumen_categorias = {}
 programa_activo = True
