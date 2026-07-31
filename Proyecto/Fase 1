@@ -6,7 +6,7 @@
 
 import pandas as pd
 
-# ---------------- VARIABLES GLOBALES ----------------
+# ---------------- IMPORTACION DE DATOS Y DICCIONARIOS ----------------
 ARCHIVO_CSV = "/Users/yisleinmadrigalramirez/Documents/GitHub/2026C2-G03-PROGRAMACIÓN/Proyecto/Muestra_Superstore.csv"
 #ARCHIVO_CSV = "/Users/yisleinmadridramirez/Documents/GitHub/2026C2-G03-PROGRAMACION/Proyecto/Fase 1/Muestra_Superstore.csv"
 datos_ventas = []
