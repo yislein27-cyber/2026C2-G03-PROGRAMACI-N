@@ -1,0 +1,27 @@
+#Investigacion 3
+#Autor: Yislein Madrigal Ramirez
+#Prueba de librerias
+
+#Libreria pandas
+
+import pandas as pd
+
+# Crear una tabla de notas de estudiantes
+datos = {
+    "Estudiante": ["Ana", "Luis", "Marta", "José"],
+    "Nota Examen 1": [85, 70, 92, 60],
+    "Nota Examen 2": [78, 88, 95, 65]
+}
+
+tabla = pd.DataFrame(datos)
+
+# Calcular el promedio de cada estudiante
+tabla["Promedio"] = (tabla["Nota Examen 1"] + tabla["Nota Examen 2"]) / 2
+
+print(tabla)
+print("\nPromedio general del grupo:", tabla["Promedio"].mean())
+
+
+
+
+    
