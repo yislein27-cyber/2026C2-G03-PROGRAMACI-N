@@ -1,0 +1,415 @@
+# ==========================================================
+# Proyecto Final - Análisis de Ventas de Superstore
+# Metodología IteraFlex - Fundamentos de Python
+# Autor: Yislein Madrigal R.
+# ==========================================================
+# Este programa carga un dataset real de ventas (Superstore, Kaggle),
+# lo limpia, lo organiza en listas y diccionarios, y permite al usuario
+# consultar, filtrar y agregar información de forma interactiva,
+# mostrando métricas simples (totales, promedios, mínimos, máximos y
+# el producto/categoría más destacados) y gráficos con matplotlib.
+# ==========================================================
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# ---------------- VARIABLES GLOBALES ----------------
+# El archivo CSV debe estar en la misma carpeta que este script.
+
+
+ARCHIVO_CSV = "/Users/yisleinmadrigalramirez/Documents/GitHub/2026C2-G03-PROGRAMACIÓN/Proyecto/Muestra_Superstore.csv"
+#ARCHIVO_CSV = "/Users/yisleinmadridramirez/Documents/GitHub/2026C2-G03-PROGRAMACION/Proyecto/Fase 1/Muestra_Superstore.csv"
+resumen_categorias = {}
+datos_ventas = []          # Lista global de diccionarios con todas las ventas cargadas
+programa_activo = True     # Controla el ciclo principal del menú
+
+# Categorías y regiones válidas del dataset (se usan para validar lo que
+# escribe el usuario antes de aceptar su respuesta)
+CATEGORIAS_VALIDAS = ["Furniture", "Office Supplies", "Technology"]
+REGIONES_VALIDAS = ["East", "West", "Central", "South"]
+
+
+# ---------------- FASE 1: Extracción de datos ----------------
+def cargar_datos(ruta_archivo):
+    """
+    Lee el archivo CSV de ventas y lo convierte en un DataFrame de pandas.
+    Maneja el error más común: que el archivo no exista.
+    """
+    print("\n--- Cargando datos del archivo ---")
+    try:
+        df = pd.read_csv(ruta_archivo, encoding="latin1")
+        print("Archivo cargado correctamente")
+        print("Dimensiones:", df.shape)
+        return df
+    except FileNotFoundError:
+        print(f"ERROR: no se encontró el archivo '{ruta_archivo}'. Verifica que el CSV esté en la misma carpeta que este script.")
+        return None
+
+
+# ---------------- FASE 2: Limpieza y Transformación ----------------
+def limpiar_datos(df):
+    """
+    Limpia el DataFrame: elimina duplicados y valores nulos, y convierte
+    columnas de texto a tipos numéricos y de fecha (conversión de datos).
+    """
+    print("\n--- Limpieza y Transformación ---")
+    filas_antes = df.shape[0]
+
+    df.dropna(inplace=True)          # Elimina filas con valores faltantes
+    df.drop_duplicates(inplace=True) # Elimina registros duplicados
+
+    # Conversión de texto a número
+    columnas_numericas = ["Sales", "Profit", "Discount", "Quantity"]
+    df[columnas_numericas] = df[columnas_numericas].apply(pd.to_numeric, errors="coerce")
+
+    # Conversión de texto a fecha
+    df["Order Date"] = pd.to_datetime(df["Order Date"], errors="coerce", dayfirst=True)
+
+    df.dropna(subset=columnas_numericas + ["Order Date"], inplace=True)
+
+    filas_despues = df.shape[0]
+    print(f"Filas antes de limpiar: {filas_antes}")
+    print(f"Filas después de limpiar: {filas_despues}")
+    return df
+
+
+# ---------------- FASE 3: Convertir a listas y diccionarios ----------------
+def convertir_a_lista_diccionarios(df):
+    """Convierte el DataFrame limpio en una lista de diccionarios (un dict por venta)."""
+    print("\n--- Convirtiendo datos a lista de diccionarios ---")
+    lista_datos = df.to_dict(orient="records")
+    print(f"Se generaron {len(lista_datos)} registros de venta")
+    return lista_datos
+
+
+def calcular_metricas_por_categoria(lista_datos):
+    """
+    Recorre todas las ventas y calcula, por categoría de producto:
+    total de ventas, promedio, ganancia total (Profit) y promedio de
+    ganancia. Retorna el resumen para que pueda reutilizarse (ej. graficar).
+    """
+    print("\n--- Calculando métricas por categoría ---")
+    resumen = {}
+
+    for registro in lista_datos:               # ciclo for #1
+        categoria = registro["Category"]
+        venta = registro["Sales"]
+        ganancia = registro["Profit"]
+
+        if categoria not in resumen:            # condicional #1
+            resumen[categoria] = {
+                "total_ventas": 0,
+                "total_ganancia": 0,
+                "cantidad": 0,
+            }
+
+        resumen[categoria]["total_ventas"] += venta
+        resumen[categoria]["total_ganancia"] += ganancia
+        resumen[categoria]["cantidad"] += 1
+
+    for categoria, valores in resumen.items():
+        valores["promedio_ventas"] = round(valores["total_ventas"] / valores["cantidad"], 2)
+        valores["promedio_ganancia"] = round(valores["total_ganancia"] / valores["cantidad"], 2)
+
+    return resumen
+
+
+def categoria_mas_rentable(resumen_categorias):
+    """
+    Recorre el resumen por categoría y determina cuál tiene mayor
+    ganancia total. Retorna una tupla (categoria, ganancia), siguiendo
+    el mismo patrón que usamos para hallar un máximo en Semana 09.
+    """
+    categoria_top = ("", -1)   # tupla (nombre_categoria, ganancia)
+
+    for categoria, valores in resumen_categorias.items():
+        if valores["total_ganancia"] > categoria_top[1]:
+            categoria_top = (categoria, valores["total_ganancia"])
+
+    return categoria_top
+
+
+def calcular_metricas_por_region(lista_datos):
+    """Calcula el total de ventas agrupado por región."""
+    resumen_region = {}
+    for registro in lista_datos:                # ciclo for #2
+        region = registro["Region"]
+        venta = registro["Sales"]
+        # Patrón de acumulación con .get(), igual al de Semana 09
+        resumen_region[region] = resumen_region.get(region, 0) + venta
+    return resumen_region
+
+
+def ventas_por_mes(lista_datos):
+    """Calcula el total de ventas agrupado por mes (tendencia en el tiempo)."""
+    resumen_mes = {}
+    for registro in lista_datos:                # ciclo for #3
+        fecha = registro["Order Date"]
+        mes = f"{fecha.year}-{fecha.month:02d}"  # ej. "2023-07"
+        venta = registro["Sales"]
+        resumen_mes[mes] = resumen_mes.get(mes, 0) + venta
+    return resumen_mes
+
+
+def producto_mas_vendido(lista_datos):
+    """
+    Recorre las ventas y determina qué producto acumula más unidades
+    vendidas (Quantity). Retorna una tupla (producto, unidades_totales).
+    """
+    unidades_por_producto = {}
+    for registro in lista_datos:                # ciclo for #4
+        producto = registro["Product Name"]
+        cantidad = registro["Quantity"]
+        unidades_por_producto[producto] = unidades_por_producto.get(producto, 0) + cantidad
+
+    producto_top = ("", -1)   # tupla (nombre_producto, unidades)
+    for producto, unidades in unidades_por_producto.items():
+        if unidades > producto_top[1]:
+            producto_top = (producto, unidades)
+
+    return producto_top
+
+
+def estadisticas_generales_ventas(lista_datos):
+    """
+    Calcula estadísticas simples sobre el monto de venta (Sales) de
+    todos los registros: total, promedio, venta mínima y venta máxima.
+    Retorna un diccionario con los cuatro valores.
+    """
+    suma_ventas = 0
+    venta_minima = lista_datos[0]["Sales"]
+    venta_maxima = lista_datos[0]["Sales"]
+
+    for registro in lista_datos:                # ciclo for #5
+        venta = registro["Sales"]
+        suma_ventas += venta
+        if venta < venta_minima:
+            venta_minima = venta
+        if venta > venta_maxima:
+            venta_maxima = venta
+
+    promedio_ventas = suma_ventas / len(lista_datos)
+
+    return {
+        "total": round(suma_ventas, 2),
+        "promedio": round(promedio_ventas, 2),
+        "minimo": round(venta_minima, 2),
+        "maximo": round(venta_maxima, 2),
+    }
+
+
+# ---------------- FASE 4: Filtrado interactivo ----------------
+def filtrar_por_categoria(lista_datos, categoria_buscada):
+    """Filtra y retorna solo las ventas de una categoría específica."""
+    resultados = []
+    for registro in lista_datos:
+        if registro["Category"].lower() == categoria_buscada.lower():
+            resultados.append(registro)
+    return resultados
+
+
+def filtrar_por_region(lista_datos, region_buscada):
+    """Filtra y retorna solo las ventas de una región específica."""
+    resultados = []
+    for registro in lista_datos:
+        if registro["Region"].lower() == region_buscada.lower():
+            resultados.append(registro)
+    return resultados
+
+
+def filtrar_por_umbral_ventas(lista_datos, umbral):
+    """Filtra y retorna solo las ventas iguales o mayores a un monto dado."""
+    resultados = []
+    for registro in lista_datos:
+        if registro["Sales"] >= umbral:
+            resultados.append(registro)
+    return resultados
+
+
+# ---------------- FASE 5: Agregar información al sistema ----------------
+def pedir_categoria_valida():
+    """
+    Pide al usuario una categoría y repite la pregunta con un ciclo
+    while hasta que escriba una de las categorías válidas del dataset.
+    """
+    categoria = input(f"Categoría {CATEGORIAS_VALIDAS}: ")
+    while categoria not in CATEGORIAS_VALIDAS:
+        print("Categoría no válida, intenta de nuevo.")
+        categoria = input(f"Categoría {CATEGORIAS_VALIDAS}: ")
+    return categoria
+
+
+def pedir_region_valida():
+    """
+    Pide al usuario una región y repite la pregunta con un ciclo
+    while hasta que escriba una de las regiones válidas del dataset.
+    """
+    region = input(f"Región {REGIONES_VALIDAS}: ")
+    while region not in REGIONES_VALIDAS:
+        print("Región no válida, intenta de nuevo.")
+        region = input(f"Región {REGIONES_VALIDAS}: ")
+    return region
+
+
+def agregar_venta(lista_datos):
+    """
+    Permite al usuario agregar un nuevo registro de venta al sistema.
+    Esto cumple con el requisito de 'modificar o añadir información'
+    de forma interactiva, e incluye conversión de texto a número y a
+    fecha, además de validar que la categoría y la región ingresadas
+    existan en el dataset.
+    """
+    print("\n--- Agregar nueva venta ---")
+    categoria_nueva = pedir_categoria_valida()
+    region_nueva = pedir_region_valida()
+
+    try:
+        monto_nuevo = float(input("Monto de la venta (ej. 250.50): "))
+        fecha_nueva = pd.to_datetime(input("Fecha de la venta (DD/MM/AAAA): "), dayfirst=True)
+    except ValueError:
+        print("Datos inválidos, no se agregó la venta.")
+        return lista_datos
+
+    nuevo_registro = {
+        "Category": categoria_nueva,
+        "Region": region_nueva,
+        "Sales": monto_nuevo,
+        "Order Date": fecha_nueva
+    }
+    lista_datos.append(nuevo_registro)
+    print("Venta agregada correctamente. Total de registros ahora:", len(lista_datos))
+    return lista_datos
+
+
+# ---------------- FASE 6: Visualización con matplotlib ----------------
+def graficar_ventas_por_categoria(resumen):
+    """Genera un gráfico de barras con el total de ventas por categoría."""
+    categorias = list(resumen.keys())
+
+    # Construimos la lista de totales con un for explícito
+    totales = []
+    for valores in resumen.values():
+        totales.append(valores["total_ventas"])
+
+    plt.figure(figsize=(7, 5))
+    plt.bar(categorias, totales, color="steelblue")
+    plt.title("Ventas totales por categoría")
+    plt.xlabel("Categoría")
+    plt.ylabel("Ventas ($)")
+    plt.tight_layout()
+    plt.show()
+
+
+def graficar_tendencia_mensual(resumen_mes):
+    """Genera un gráfico de línea con la tendencia de ventas por mes."""
+    meses = sorted(resumen_mes.keys())
+
+    totales = []
+    for mes in meses:
+        totales.append(resumen_mes[mes])
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(meses, totales, marker="o", color="darkorange")
+    plt.title("Tendencia de ventas por mes")
+    plt.xlabel("Mes")
+    plt.ylabel("Ventas ($)")
+    plt.xticks(rotation=75)
+    plt.tight_layout()
+    plt.show()
+
+
+# ---------------- FASE 7: Menú interactivo ----------------
+def mostrar_menu():
+    """Muestra las opciones disponibles del programa."""
+    print("\n===== MENÚ DE ANÁLISIS - SUPERSTORE =====")
+    print("1. Ver ventas totales y promedio por categoría (+ gráfico)")
+    print("2. Ver ventas totales por región")
+    print("3. Ver tendencia de ventas por mes (+ gráfico)")
+    print("4. Filtrar ventas por categoría")
+    print("5. Filtrar ventas por región")
+    print("6. Filtrar ventas por encima de un monto")
+    print("7. Ver estadísticas generales de ventas (total, promedio, mínimo, máximo)")
+    print("8. Ver producto más vendido y categoría más rentable")
+    print("9. Agregar una nueva venta al sistema")
+    print("10. Salir")
+
+
+def ejecutar_programa():
+    """Función principal: coordina todas las fases del programa."""
+    global programa_activo, datos_ventas
+
+    df = cargar_datos(ARCHIVO_CSV)
+    if df is None:
+        return
+
+    df = limpiar_datos(df)
+    datos_ventas = convertir_a_lista_diccionarios(df)
+
+    while programa_activo:                              # ciclo while (menú)
+        mostrar_menu()
+        opcion = input("Elige una opción (1-10): ")
+
+        if opcion == "1":
+            resumen = calcular_metricas_por_categoria(datos_ventas)
+            for categoria, valores in resumen.items():
+                print(f"{categoria}: total=${valores['total_ventas']:.2f}  promedio=${valores['promedio_ventas']}  ganancia=${valores['total_ganancia']:.2f}")
+            graficar_ventas_por_categoria(resumen)
+
+        elif opcion == "2":
+            resumen_region = calcular_metricas_por_region(datos_ventas)
+            for region, total in resumen_region.items():
+                print(f"{region}: ${total:.2f}")
+
+        elif opcion == "3":
+            resumen_mes = ventas_por_mes(datos_ventas)
+            for mes in sorted(resumen_mes):
+                print(f"{mes}: ${resumen_mes[mes]:.2f}")
+            graficar_tendencia_mensual(resumen_mes)
+
+        elif opcion == "4":
+            categoria_usuario = pedir_categoria_valida()
+            filtrados = filtrar_por_categoria(datos_ventas, categoria_usuario)
+            print(f"Se encontraron {len(filtrados)} ventas en la categoría '{categoria_usuario}'")
+
+        elif opcion == "5":
+            region_usuario = pedir_region_valida()
+            filtrados = filtrar_por_region(datos_ventas, region_usuario)
+            print(f"Se encontraron {len(filtrados)} ventas en la región '{region_usuario}'")
+
+        elif opcion == "6":
+            monto_texto = input("Ingresa el monto mínimo de venta a filtrar: ")
+            try:
+                monto = float(monto_texto)
+                filtrados = filtrar_por_umbral_ventas(datos_ventas, monto)
+                print(f"Se encontraron {len(filtrados)} ventas iguales o mayores a ${monto}")
+            except ValueError:
+                print("Ese no es un número válido")
+
+        elif opcion == "7":
+            estadisticas = estadisticas_generales_ventas(datos_ventas)
+            print(f"Total de ventas: ${estadisticas['total']:.2f}")
+            print(f"Promedio de venta: ${estadisticas['promedio']:.2f}")
+            print(f"Venta mínima: ${estadisticas['minimo']:.2f}")
+            print(f"Venta máxima: ${estadisticas['maximo']:.2f}")
+
+        elif opcion == "8":
+            resumen = calcular_metricas_por_categoria(datos_ventas)
+            categoria_top = categoria_mas_rentable(resumen)
+            producto_top = producto_mas_vendido(datos_ventas)
+            print(f"Categoría más rentable: {categoria_top[0]} (ganancia total: ${categoria_top[1]:.2f})")
+            print(f"Producto más vendido: {producto_top[0]} ({producto_top[1]} unidades)")
+
+        elif opcion == "9":
+            datos_ventas = agregar_venta(datos_ventas)
+
+        elif opcion == "10":
+            programa_activo = False
+            print("Saliendo del programa. ¡Gracias!")
+
+        else:
+            print("Opción no válida, intenta de nuevo")
+
+
+# ---------------- Ejecución principal ----------------
+if __name__ == "__main__":
+    ejecutar_programa()
