@@ -1,9 +1,9 @@
 # ==========================================================
 # Proyecto Final - Análisis de Ventas de Superstore
-# Metodología IteraFlex - Fundamentos de Python
+# Metodología IteraFlex - Programacion en Python
 # Autor: Yislein Madrigal R.
 # ==========================================================
-# Este programa carga un dataset real de ventas (Superstore, Kaggle),
+# Este codigo carga un dataset real de ventas (Superstore, Kaggle),
 # lo limpia, lo organiza en listas y diccionarios, y permite al usuario
 # consultar, filtrar y agregar información de forma interactiva,
 # mostrando métricas simples (totales, promedios, mínimos, máximos y
