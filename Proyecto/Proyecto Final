@@ -14,8 +14,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ---------------- VARIABLES GLOBALES ----------------
-# El archivo CSV debe estar en la misma carpeta que este script.
-
 
 ARCHIVO_CSV = "/Users/yisleinmadrigalramirez/Documents/GitHub/2026C2-G03-PROGRAMACIÓN/Proyecto/Muestra_Superstore.csv"
 #ARCHIVO_CSV = "/Users/yisleinmadridramirez/Documents/GitHub/2026C2-G03-PROGRAMACION/Proyecto/Fase 1/Muestra_Superstore.csv"
