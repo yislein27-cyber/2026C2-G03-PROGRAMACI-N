@@ -133,7 +133,7 @@ def calcular_metricas_por_region(lista_datos):
     for registro in lista_datos:                # ciclo for #2
         region = registro["Region"]
         venta = registro["Sales"]
-        # Patrón de acumulación con .get(), igual al de Semana 09
+        # Patrón de acumulación con .get()
         resumen_region[region] = resumen_region.get(region, 0) + venta
     return resumen_region
 
